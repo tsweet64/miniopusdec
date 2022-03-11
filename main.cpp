@@ -1,6 +1,5 @@
 #include<opus/opusfile.h>
 #include<iostream>
-#include<chrono>
 #include<fstream>
 
 int main(int argc, char** argv) {
@@ -24,28 +23,26 @@ int main(int argc, char** argv) {
     std::cout << "Channel count: " << channel_cnt << std::endl;
     //get time
     long sample_cnt = op_pcm_total(opusfile, -1);
-    long time_ms = static_cast<double>(sample_cnt) / 48.0;
-    std::cout << "Duration (s): " << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(time_ms)).count() << std::endl;
+    double time_s = static_cast<double>(sample_cnt) / 48000.0;
+    std::cout << "Duration (s): " << time_s << std::endl;
     //get bitrate
     opus_int32 bitrate = op_bitrate(opusfile, -1);
     std::cout << "Bitrate: " << static_cast<double>(bitrate)/1000.0/channel_cnt << " kb/s\n";
     //get tags
     std::cout << "\n ---Begin tags---\n";
     const OpusTags* tags = op_tags(opusfile, -1);
-        //get vendor
+        //get vendor/encoder
     std::cout << "Vendor/encoder: " << tags->vendor << std::endl;
     for (int i = 0; i < sizeof(tags->user_comments); i++) {
         std::cout << tags->user_comments[i] << std::endl;
     }
-    //initialize an output file for testing purposes
+    //Initialize an output file stream for the decoded pcm
     std::fstream outpcm = std::fstream(outfile, std::ios::out | std::ios::app | std::ios::binary);
-
 
     // Use opus decoder. Decodes ~120ms at a time. For simplicity we only implement stereo.
     opus_int16* dec_buffer=(opus_int16*)malloc(sizeof(short)*11520);
-    //opus_int16* dec_buffer = new opus_int16(11520);
-    //for (int i = 0; i < 500000; i++) {
     int numread;
+    // Keep an iterator so we can print the bitrate every n frames
     long itercount = 0;
     while(true) {
         itercount++;
@@ -64,13 +61,8 @@ int main(int argc, char** argv) {
         if (itercount % 10 == 0) {
             std::cout << "Current bitrate: " << static_cast<double>(op_bitrate_instant(opusfile))/1000.0 << " kb/s\n";
         }
+        // write a block of raw pcm to outfile
         outpcm.write((char*)dec_buffer, numread*channel_cnt*2);
     }
-
-
     outpcm.close();
-
-
-
 }
-
