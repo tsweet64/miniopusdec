@@ -42,7 +42,8 @@ int main(int argc, char** argv) {
 
 
     // Use opus decoder. Decodes ~120ms at a time. For simplicity we only implement stereo.
-    opus_int16* dec_buffer = new opus_int16(11520);
+    opus_int16* dec_buffer=(opus_int16*)malloc(sizeof(short)*11520);
+    //opus_int16* dec_buffer = new opus_int16(11520);
     //for (int i = 0; i < 500000; i++) {
     int numread;
     long itercount = 0;
