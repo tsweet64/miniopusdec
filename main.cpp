@@ -2,6 +2,8 @@
 #include<iostream>
 #include<fstream>
 
+const int OPUS_NUM_SAMPLES = 17280;
+
 int main(int argc, char** argv) {
     // Get filename from command line args
     if (argc != 3) {
@@ -45,12 +47,12 @@ int main(int argc, char** argv) {
     std::fstream outpcm = std::fstream(outfile, std::ios::out | std::ios::app | std::ios::binary);
 
     // Use opus decoder. Decodes ~120ms at a time. For simplicity we only implement stereo.
-    opus_int16* dec_buffer=(opus_int16*)malloc(sizeof(short)*11520);
+    opus_int16* dec_buffer= new opus_int16[OPUS_NUM_SAMPLES*2];
     int numread;
     long itercount = 0; // Keep an iterator so we can print the bitrate every n frames
     while(true) {
         itercount++;
-        int numread = op_read_stereo(opusfile, dec_buffer, 11520);
+        int numread = op_read_stereo(opusfile, dec_buffer, OPUS_NUM_SAMPLES*2);
         if (numread == -3) {
             std::cout << "Potentially recoverable error detected.\n";
             continue;
