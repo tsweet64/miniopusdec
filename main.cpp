@@ -14,36 +14,40 @@ int main(int argc, char** argv) {
     //open the opus file
     int openstatus = 0;
     OggOpusFile* opusfile = op_open_file(filename, &openstatus);
-    if (!openstatus) {
-        std::cout << "The file was opened successfully\n";
+    if (openstatus) {
+        std::cout << "There was an error opening the file.\n";
+        return 1;
     }
+    std::cout << "The file was opened successfully\n";
 
     //get channel count
     int channel_cnt = op_channel_count(opusfile, -1);
     std::cout << "Channel count: " << channel_cnt << std::endl;
+
     //get time
     long sample_cnt = op_pcm_total(opusfile, -1);
     double time_s = static_cast<double>(sample_cnt) / 48000.0;
     std::cout << "Duration (s): " << time_s << std::endl;
+
     //get bitrate
     opus_int32 bitrate = op_bitrate(opusfile, -1);
     std::cout << "Bitrate: " << static_cast<double>(bitrate)/1000.0/channel_cnt << " kb/s\n";
+
     //get tags
     std::cout << "\n ---Begin tags---\n";
     const OpusTags* tags = op_tags(opusfile, -1);
-        //get vendor/encoder
     std::cout << "Vendor/encoder: " << tags->vendor << std::endl;
     for (int i = 0; i < sizeof(tags->user_comments); i++) {
         std::cout << tags->user_comments[i] << std::endl;
     }
+
     //Initialize an output file stream for the decoded pcm
     std::fstream outpcm = std::fstream(outfile, std::ios::out | std::ios::app | std::ios::binary);
 
     // Use opus decoder. Decodes ~120ms at a time. For simplicity we only implement stereo.
     opus_int16* dec_buffer=(opus_int16*)malloc(sizeof(short)*11520);
     int numread;
-    // Keep an iterator so we can print the bitrate every n frames
-    long itercount = 0;
+    long itercount = 0; // Keep an iterator so we can print the bitrate every n frames
     while(true) {
         itercount++;
         int numread = op_read_stereo(opusfile, dec_buffer, 11520);
