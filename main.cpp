@@ -5,11 +5,12 @@
 
 int main(int argc, char** argv) {
     // Get filename from command line args
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " filename.opus\n";
+    if (argc != 3) {
+        std::cout << "Usage: " << argv[0] << " filename.opus outfile\n";
         return 1;
     }
     char* filename = argv[1];
+    char* outfile = argv[2];
 
     //open the opus file
     int openstatus = 0;
@@ -37,14 +38,31 @@ int main(int argc, char** argv) {
         std::cout << tags->user_comments[i] << std::endl;
     }
     //initialize an output file for testing purposes
-    std::fstream outpcm = std::fstream("output.pcm", std::ios::out | std::ios::app | std::ios::binary);
+    std::fstream outpcm = std::fstream(outfile, std::ios::out | std::ios::app | std::ios::binary);
 
 
     // Use opus decoder. Decodes ~120ms at a time. For simplicity we only implement stereo.
     opus_int16* dec_buffer = new opus_int16(11520);
-    for (int numread = op_read_stereo(opusfile, dec_buffer, 11520); numread > 0; ) {
-        std::cout << "read count: " << numread << " bytepos: " << op_raw_tell(opusfile) << std::endl;
-        char* aschar = (char*)dec_buffer;
+    //for (int i = 0; i < 500000; i++) {
+    int numread;
+    long itercount = 0;
+    while(true) {
+        itercount++;
+        int numread = op_read_stereo(opusfile, dec_buffer, 11520);
+        if (numread == -3) {
+            std::cout << "Potentially recoverable error detected.\n";
+            continue;
+        } else if (numread < 0) {
+            std::cout << "There was an error decoding the stream. " << numread << std::endl;
+            break;
+        } else if (numread == 0) {
+            std::cout << "End of file\n";
+            break;
+        }
+        //std::cout << "read count: " << numread << " bytepos: " << op_raw_tell(opusfile) << std::endl;
+        if (itercount % 10 == 0) {
+            std::cout << "Current bitrate: " << static_cast<double>(op_bitrate_instant(opusfile))/1000.0 << " kb/s\n";
+        }
         outpcm.write((char*)dec_buffer, numread*channel_cnt*2);
     }
 
